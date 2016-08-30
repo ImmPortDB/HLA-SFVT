@@ -1,0 +1,485 @@
+                                  User's Guide
+                                      For
+                                 SFVT Pipelines
+                                  May 18, 2016
+
+
+This document specifies how to install the SFVT toolset and run the SFVT
+pipelines.
+
+  - Installation
+  - Running the Pipelines
+
+
+                                   Section 1
+                                  Installation
+
+
+There are several tools and software to install to run the SFVT pipeline.  This
+document assumes the following components are available on your laptop.  I have
+indicated the version of these components that were used for testing.
+
+  System        Tested With
+  ------------  ----------------------------------------------------------------
+  laptop        x86_64-linux
+  Linux OS      Ubuntu 14.04 LTS
+  mysql server  Ver 14.14 Distrib 5.5.49
+  perl          perl 5, version 18, subversion 2 (v5.18.2)
+  python        Python 2.7.6
+
+The installation package, SFVT-PACKAGE.zip, needs to be unzipped to expose the
+installation components.  Assume that this file is unzipped into the
+DOWNLOAD_DIR directory.  The components include:
+
+  Installation Component   Description
+  -----------------------  -----------------------------------------------------
+  USERS-GUIDE.SFVT.txt     This document
+
+  ANTT-v0.5.0.zip          ANTT toolset for running allele validations
+  antt_050_user-guide.pdf  ANTT user's guide
+  mono.zip                 The mono tool for running ANTT.exe on Linux
+
+  SAMPLES.zip              Sample runs of the pipelines
+
+  perl.zip                 The perl software system for uploading the mysql
+                           database and running the pipelines
+  mhc.oracle.zip           The content of the mysql database specified in
+                           bcp-files 
+
+  pypop.zip                The pypop toolset
+  pypop-guide.pdf          pypop user's guide
+  Numeric-24.2.zip         The numeric package that pypop requires
+
+The following sub-Sections will specify how to install each of these
+components. For all the components will be installed in the user's opt directory
+that is located at $HOME/opt.  If it does not exist it will be created.
+
+  > mkdir -m 777 -p $HOME/opt 
+
+We will call the opt directory path OPT_DIR in the following sub-Sections
+
+ - Installing ANTT and mono
+ - Installing pypop
+ - Installing perl toolset and mhc_var dataset
+ - mysql Requirement
+ - Creating and Uploading the mysql mhc_seq_var schema 
+
+
+1.1  Installing ANTT and mono
+
+Install mono
+
+  > cd OPT_DIR
+  > unzip DOWNLOAD_DIR/HLAVT-PACKAGE.ZIP/mono.zip
+    
+The mono tool is: OPT_DIR/mono/mono
+
+Install ANTT
+
+  > cd OPT_DIR
+  > unzip DOWNLOAD_DIR/HLAVT-PACKAGE.ZIP/ANTT-v0.5.0.zip
+    
+The ANTT tool is: OPT_DIR/ANTT-v0.5.0/ANTT.exe
+
+
+1.2  Installing pypop
+
+You will need to have sudo access (sudo -i) to complete this installation.  Once
+the installation is successfully completed the pypop tool will be
+/usr/bin/pypop.  Appendix A, "Pypop Tool Timings", provides timing information
+on the length of the run for pypop.
+
+1.2.1.  Installation of additional Ubuntu packages required by pypop
+
+The following packages need to be installed into Ubuntu for pypop to run
+
+  > sudo apt-get install swig
+  > sudo apt-get install libgsl0-dev
+
+  > sudo apt-get install libgsl0-dev
+  > sudo apt-get install libxslt1-dbg        ### XSLT 1.0 processing library - debugging symbols
+  > sudo apt-get install libxslt1-dev        ### XSLT 1.0 processing library - development kit
+  > sudo apt-get install libxslt1.1          ### XSLT 1.0 processing library - runtime library
+  > sudo apt-get install xsltproc            ### XSLT 1.0 command line processor
+
+  > sudo apt-get install python-dev
+
+  > sudo apt-get install python-libxslt1     ### Python bindings for libxslt1
+  > sudo apt-get install python-libxslt1-dbg ### Python bindings for libxslt1 (debug extension)
+
+  > sudo apt-get install libgfortran3
+  > sudo apt-get install gfortran
+  > sudo apt-get install python-numpy python-scipy python-matplotlib ipython ipython-notebook python-pandas python-sympy python-nose
+
+1.2.2.  Installation of Numeric-24.2.zip
+
+  > cd WORKING_DIR
+  > unzip DOWNLOAD_DIR/HLAVT-PACKAGE.ZIP/Numeric-24.2.zip
+  > cd Numeric-24.2
+  > python setup.py build
+
+  > sudo -i 
+  > cd WORKING_DIR/Numeric-24.2
+  > python setup.py install
+  > exit
+
+1.2.3.  Installation of pypop
+
+  > cd WORKING_DIR
+  > unzip DOWNLOAD_DIR/HLAVT-PACKAGE.ZIP/pypop.zip
+  > cd pypop
+  > export CFLAGS="-O3 -funroll-loops -Wall"
+  > export DISTRIB=true
+  > python setup.py build
+
+  > sudo -i
+  > cd WORKING_DIR/pypop
+  > python setup.py install
+  > mv /usr/local/bin/pypop /usr/bin/pypop
+  > mv /usr/local/share/pypop  /usr/share/pypop
+  > cp /usr/share/pypop/VERSION /usr/bin
+  > exit
+
+
+1.3 Installing perl toolset and mhc_var dataset
+
+The following CPAN Perl modules are used by the perl toolset software.  Many of
+them are standard modules that come with a perl installation, but some may need
+to be installed for the tool to work.  If some have not been install, you will
+need to install them using CPAN or some other perl module installer
+
+  Carp
+  Class::Struct
+  Cwd
+  DBI
+  DBD::mysql
+  DB_File
+  Digest::SHA1
+  Fcntl
+  File::Basename
+  File::Copy
+  File::Find
+  FileHandle
+  Getopt::Long
+  Getopt::Std
+  LWP::Simple
+  POSIX
+  Pod::Usage
+  Spreadsheet::ParseExcel
+  Spreadsheet::WriteExcel
+  Time::Local
+  XML::Parser
+
+Installing the perl toolset and mhc_seq_var dataset
+
+  > mkdir -m 777 -p OPT_DIR/hlavt
+  > cd OPT_DIR/hlavt
+  > unzip DOWNLOAD_DIR/HLAVT-PACKAGE.ZIP/perl.zip
+  > unzip DOWNLOAD_DIR/HLAVT-PACKAGE.TAR/mhc.oracle.zip
+
+
+1.4 mysql Requirement
+
+mysql needs to be configured on Ubuntu to be case-insensitive for the sfvt
+pipeline to work.  You will need to make sure that you have case-insensitive
+naming in SQL ddl and queries in mysql.  To accomplish this, you will have to
+add a mysql server system variable.  This will be done by updating the mysql
+server configuration file:
+
+  /etc/mysql/my.cnf
+
+You will need to add the following line under the [mysqld] area of this file:
+
+lower_case_table_names=1
+
+To make this change, you will need to become sudo (sudo -i) to modify the the
+mysql configuration file.  Once the change has been made, mysql will need to be
+stopped and restarted.  The easiest way to do this is to reboot your laptop,
+otherwise you will need to be sudo and use various MySQL admin commands.
+
+
+1.5 Creating and Uploading the mysql mhc_seq_var schema 
+
+To create the schema and upload the data, you will need to create a properties
+file and run one of the perl tools as follows.  The properties file
+loadMySQL.run.properties in WORKING_DIR will contain the following properties:
+
+executionDirectory=WORKING_DIR/upload
+optDirectory=OPT_DIR
+userName=USERNAME
+password=PASSWORD
+
+where you will need to supply the paths for WORKING_DIR and OPT_DIR and the user
+name (USERNAME) and password (PASSWORD) for the mysql server.
+
+To run the tool execute the following commands (substituting the path for
+WORKING_DIR and OPT_DIR):
+
+  > cd WORKING_DIR
+  > export BIN_DIR="OPT_DIR/hlavt/perl/hla_feature_variation/SFVT"
+  > $BIN_DIR/loadMySQL.pl --propertiesFile loadMySQL.run.properties
+
+This will tool will create the schema using the ddl
+  OPT_DIR/hlavt/perl/hla_feature_variation/lib/db/mhc_seq_var.schema.sql
+and load the bcp-files located in
+  OPT_DIR/hlavt/mhc.oracle
+The following data dictionary files describe the tables and columns in the
+schema in the directory mhc_seq_var.data_dictionary.columns.xls:
+
+  - mhc_seq_var.data_dictionary.tables.xls
+  - mhc_seq_var.data_dictionary.columns.xls
+
+The dataset that is loaded into mysql was generated for the HLA/IMGT release
+Release 3.10.0 dated Oct 17, 2012.  To update the dataset, I have provided a
+brief Appendix B, "Updating the Dataset".
+
+
+                                   Section 2
+                             Running the Pipelines
+
+
+This section specifies how to run the five (5) SFVT pipelines.  
+
+  Pipeline  Description
+  --------  --------------------------------------------------------------------
+  hlavf     Validate the input file only
+  hlaqc     Validate and run pypop tool pipeline
+  hlavd     Validate and run the ambiguity reduction pipeline
+  hlavt     Validate and generate sfvt vector files
+  hlava     Analyze sfvt vector file(s) generated by hlavt
+
+The runner script is specified below:
+
+  OPT_DIR/hlavt/perl/hla_feature_variation/SFVT/runSfvtPipelines.pl
+
+where OPT_DIR is defined to be the path for $HOME/opt (See Section 1).  To get
+the man-page for this tool execute the following:
+
+  > OPT_DIR/hlavt/perl/hla_feature_variation/SFVT/runSfvtPipelines.pl --help
+
+The man-page for this tool is provided Appendix C, "runSfvtPipelines.pl
+Information".  This tool is run by providing a properties file,
+runSfvtPipelines.run.properties, as follows:
+
+  > cd EXEC_DIR
+  > export BIN_DIR="OPT_DIR/hlavt/perl/hla_feature_variation/SFVT"
+  > $BIN_DIR/runSfvtPipelines.pl --propertiesFile runSfvtPipelines.run.properties
+
+where EXEC_DIR is some directory in which you are running the tool.  The
+properties file contains that following properties and these properties are
+fully described in the man-page and in Appendix C.
+
+###
+### Always Required
+###
+executionDirectory=
+taskId=
+pipelineType=
+optDirectory=
+userName=
+password=
+hlaAlleleFile=
+###
+### Required for hlaqc
+###
+pypop=/usr/bin/pypop
+###
+### Required for hlava
+###
+hlaLoci=
+vectorFileDirectory=
+phenotypeColumn=
+###
+### Optional
+###
+outputImgtVersion=
+debugSwitch=
+
+Sample input file data is provided in the directory:
+
+  OPT_DIR/hlavt/perl/hla_feature_variation/data/hlavtTestData
+
+Also, sample runs for each pipeline type are contained in the zip file,
+SAMPLES.zip.  This file contains the properties file, log and and the complete
+run for each type.
+
+  > cd WORKING_DIR
+  > unzip SAMPLES.zip
+
+Appendix C also contains information on the underlying Perl scripts in the Perl
+toolset that are used for the pipelines.
+
+
+                                   Appendix A
+                               Pypop Tool Timings
+
+
+The following timings were determined using a sample HLA Typing result file
+using IMGT/HLA version 3 format data.
+
+                          Timing 
+Num Subject  Num Loci  (Seconds)
+-----------  --------  ---------
+        300         3        232
+        500         3        267
+       1000         3        326
+       1568         3        519
+
+        300         4        266
+        500         4        333
+       1000         4        397
+       1568         4        573
+
+        300         5        282
+        500         5        350
+       1000         5        408
+       1568         5        624
+
+        300         6        338
+        500         6        408
+       1000         6        524
+       1568         6        739
+
+
+                                   Appendix B
+                              Updating the Dataset
+
+
+To update the mhc_seq_var dataset requires several steps that are specified in
+the directory
+
+  OPT_DIR/hlavt/perl/hla_feature_variation/SOP
+
+where OPT_DIR is the path for $HOME/opt.  The following two documents that specify how to
+download the required data for a release and run the processing/loading pipelines.
+
+  Document                                Description
+  ---------------------------  -------------------------------------------------
+  HlaFeatureVariationSOP.docx  Downloading and processing a new release of
+                               IMGT/HLA and associated data and loading all data
+                               into the database
+  SfvtGenerationSOP.docx       Generating the sequence feature variant data for
+                               new release of IMGT/HLA data prior to loading
+			       data into the database
+
+The scripts for running the processing/loading pipelines are contained in the
+directory above.  See the README file on how to run the scripts.  Also support
+data that was used for these pipelines for IMGT/HLA 3.10.0 can be found in the
+directory:
+
+  OPT_DIR/hlavt/perl/hla_feature_variation/data
+
+  Directory                Description
+  ---------------          -----------------------------------------------------
+  ANTT_translation_tables  Data generated from the IMGT/HLA release that is used
+                           by the ANTT.exe tool for allele validation
+  AnthonyNolan             IMGT/HLA release data (currently contains rlease
+                           Release.3.100) 
+  CWD                      Data found at cwd.immunogenomics.org
+  Cano-CWD                 Data found in the paper, "Common and Well-Documented
+                           HLA Alleles"
+  FeatureVariants          Sequence feature variant data generated by previous
+                           IMGT/HLA releases that are used in the update
+                           pipeline for SFVT
+  NMDP                     NMPD allele codes
+  SteveMack                Data from Steve Mack for ambiguity reduction processing
+  UTSW                     Data from University Texas South West for generating
+                           sequence feature variant data
+  dbMHC                    Allele frequencies population data from
+                           http://www.ncbi.nlm.nih.gov/gv/mhc 
+
+
+                                   Appendix C
+                          runSfvtPipelines.pl Information
+
+
+C.1 Man-Page
+
+runSfvtPipelines.pl --propertiesFile PROPERTIES_FILE (--help)
+help           -- This help message
+propertiesFile -- File containing the properties for a given pipeline run:
+  Required Properties:
+    executionDirectory  -- The path of the directory in which the tool is
+                           executed and all the logs and results are writtern.
+                           The path is either absolute or relative to directory
+                           in which the this tool is running.  The directory path
+                           cannot have any space characters in it.
+    taskId              -- Numeric identifier (e.g., 123) for pipeline run files
+                           in the executionDirectory
+    pipelineType        -- The type of the pipeline.  One of the following:
+                             hlavf - validate the input file only
+                             hlaqc - validate and run pypop tool pipeline
+                             hlavd - validate and run the ambiguity reduction
+                                     pipeline
+                             hlavt - validate and generate sfvt vector files
+                             hlava - analyze sfvt vector file(s) generated by 
+                                     hlavt
+    optDirectory        -- Absolute path for the 'opt' directory.  This is the
+                           directory into which the installation for SFVT has
+                           been installed, normally located in the your home
+                           root directory e.g., /home/tsmith/opt
+    hlaAlleleFile       -- For all pipeline types, you must provide the allele
+                           file path to process.  In the case of hlava, it was
+                           the file from which the vector files were generated.
+                           The file path can be absolute or relative to the
+                           directory in which this tool is currently executing.
+                           This file is either a tab-separated text file (.txt)
+                           or an Excel spreadsheet (.xls).  If the basename of
+                           the file path has space characters, then spaces will
+                           be replaced with underscores.  This file is copied
+                           into executionDirectory for processing.  The HLA file
+                           content type can be 'HLA Typing' (ImmPort template
+                           file HLA_Typing.txt), Pypop (pypop-guide.pdf), or
+                           Custom.
+    userName            -- User name for MySQL server
+    password            -- Password for MySQL server
+  Required Based on pipelineType:
+    pypop               -- For pipeline type hlaqc, the location of the pypop
+                           tool.  Using the standard installation, this tool
+                           file will be located at:
+                             /usr/bin/pypop
+
+    hlaLoci             -- For pipeline type hlava, you must provide a
+                           semi-colon separated list of HLA loci to analyze
+                           (e.g., HLA-A;HLA-DBA)
+    vectorFileDirectory -- For pipeline type hlava, you must provide the absolute
+                           path to the directory containing the vector files for
+                           the HLA loci in the hlaLoci property that were
+                           previously generated using the hlavt pipeline.
+    phenotypeColumn     -- For pipeline type hlava, you must provide the column
+                           name in the vector files that specifies the phenotype
+                           to analyze.  This column must appear in the original
+                           input file for the hlavt generation
+  Optional Properties:
+    outputImgtVersion   -- The out version of the alleles in the generated files,
+                           either IMGT/HLA version 2 or IMGT/HLA 3 (default = 3)
+    debugSwitch         -- The debug switch, either 0 (FALSE) or 1 (TRUE)
+                           (default = 0)
+
+
+C.2 Perl Scripts Used by the SFVT Pipelines
+
+The SFVT pipelines are controlled by the following Perl script:
+
+  OPT_DIR/hlavt/perl/hla_feature_variation/bin/runQualityControlPipeline.pl
+
+This script is executed via the Perl script runSfvtPipelines.pl that configures
+the properties file for a particular pipeline and then executes
+runQualityControlPipeline.pl.
+
+The script runQualityControlPipeline.pl calls other Perl scripts found in
+
+  OPT_DIR/hlavt/perl/hla_feature_variation/bin
+
+to accomplish the processing requirements for a given pipeline:
+
+  Perl Script                     Pipeline
+  -----------------------------  -----------------------------------------------
+  validateAlleleNames.pl         hlavf, hlaqc, hlavd, hlavt
+  allelicAmbiguityReduction.pl   hlavd
+  genotypeAmbiguityReduction.pl  hlavd
+  generateVariantTypes.pl        hlavt
+  analyzeVariantTypes.pl         hlava
+  runPypop.pl                    hlaqc
+
+
